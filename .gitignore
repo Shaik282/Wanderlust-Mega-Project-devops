@@ -1,0 +1,11 @@
+# Trivy cache
+.cache/
+
+# AWS CLI installer
+awscliv2.zip
+
+# Node dependencies
+node_modules/
+
+# Docker
+*.tar
