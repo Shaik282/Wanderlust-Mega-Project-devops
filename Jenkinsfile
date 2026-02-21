@@ -4,7 +4,7 @@ pipeline {
     agent { label 'Node' }
 
     environment {
-        SONAR_HOME = tool "sonar"
+        SONAR_HOME = tool "sonar" // SonarQube installation path
     }
 
     parameters {
@@ -14,6 +14,7 @@ pipeline {
 
     stages {
 
+        // Stage 1: Validate that required parameters are provided
         stage("Validate Parameters") {
             steps {
                 script {
@@ -24,27 +25,30 @@ pipeline {
             }
         }
 
+        // Stage 2: Clean workspace to avoid conflicts
         stage("Workspace cleanup") {
             steps {
                 cleanWs()
             }
         }
 
+        // Stage 3: Checkout code from GitHub
         stage("Git: Code Checkout") {
             steps {
                 git branch: 'main', url: 'https://github.com/Shaik282/Wanderlust-Mega-Project-devops.git'
             }
         }
 
+        // Stage 4: Trivy scan using Docker (avoids 'trivy: not found')
         stage("Trivy: Filesystem scan") {
             steps {
-                // Run Trivy via Docker to avoid "trivy: not found"
                 sh '''
                     docker run --rm -v $PWD:/app aquasec/trivy fs /app
                 '''
             }
         }
 
+        // Stage 5: OWASP Dependency Check
         stage("OWASP: Dependency check") {
             steps {
                 sh '''
@@ -55,6 +59,7 @@ pipeline {
             }
         }
 
+        // Stage 6: SonarQube code analysis
         stage("SonarQube: Code Analysis") {
             steps {
                 withSonarQubeEnv('Sonar') {
@@ -69,12 +74,14 @@ pipeline {
             }
         }
 
+        // Stage 7: SonarQube quality gates
         stage("SonarQube: Code Quality Gates") {
             steps {
                 waitForQualityGate abortPipeline: true
             }
         }
 
+        // Stage 8: Export environment variables in parallel for frontend/backend
         stage("Exporting environment variables") {
             parallel {
                 stage("Backend env setup") {
@@ -95,6 +102,7 @@ pipeline {
             }
         }
 
+        // Stage 9: Build Docker images for backend and frontend
         stage("Docker: Build Images") {
             steps {
                 dir('backend') {
@@ -106,6 +114,7 @@ pipeline {
             }
         }
 
+        // Stage 10: Push Docker images to DockerHub
         stage("Docker: Push to DockerHub") {
             steps {
                 sh "docker push madhar11/wanderlust-backend:${params.BACKEND_DOCKER_TAG}"
@@ -117,7 +126,10 @@ pipeline {
 
     post {
         success {
+            // Archive XML reports if any
             archiveArtifacts artifacts: '*.xml', followSymlinks: false
+
+            // Trigger CD pipeline after successful build
             build job: "Wanderlust-CD", parameters: [
                 string(name: 'FRONTEND_DOCKER_TAG', value: "${params.FRONTEND_DOCKER_TAG}"),
                 string(name: 'BACKEND_DOCKER_TAG', value: "${params.BACKEND_DOCKER_TAG}")
