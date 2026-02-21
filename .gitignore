@@ -1,11 +1,27 @@
-# Trivy cache
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Environment
+.env*
+
+# Editor files
+.vscode/
+.idea/
+.DS_Store
+
+# Docker and caches
 .cache/
+*.tar
+docker-compose.override.yml
 
 # AWS CLI installer
 awscliv2.zip
-
-# Node dependencies
-node_modules/
-
-# Docker
-*.tar
